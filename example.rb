@@ -1,3 +1,5 @@
+#!/usr/bin/ruby
+
 require 'puppet'
 
 # Example of a module setting everything up to perform custom
@@ -128,46 +130,92 @@ end
 
 # -- Example usage of the new validator
 
-# Get a parser
-parser = Puppet::Pops::Parser::EvaluatingParser.singleton
+# Track the number of CLI arguments that are unreadable filenames
+@unreadable_files = 0
 
-# parse without validation
-result = parser.parser.parse_string('$x = if 1 < 2 { smaller } else { bigly }', 'testing.pp')
-result = result.model
+# Usage statement
+def usage()
+  script_name = $0
+  puts <<-USAGE
+#{script_name} <filename>
 
-# validate using the default validator and get hold of the acceptor containing the result
-acceptor = parser.validate(result)
+Parses and validates a file containing Puppet DSL
+  USAGE
 
-# -- At this point, we have done everything `puppet parser validate` does except report the errors
-# and raise an exception if there were errors.
-
-# The acceptor may now contain errors and warnings as found by the standard puppet validation.
-# We could look at the amount of errors/warnings produced and decide it is too much already
-# or we could simply continue. Here, some feedback is printed:
-#
-puts "Standard validation errors found: #{acceptor.error_count}"
-puts "Standard validation warnings found: #{acceptor.warning_count}"
-
-# Validate using the 'MyValidation' defined above
-#
-validator = MyValidation::MyFactory.new().validator(acceptor)
-
-# Perform the validation - this adds the produced errors and warnings into the same acceptor
-# as was used for the standard validation
-#
-validator.validate(result)
-
-# We can print total statistics
-# (If we wanted to generated the extra validation separately we would have had to
-# use a separate acceptor, and then add everything in that acceptor to the main one.)
-#
-puts "Total validation errors found: #{acceptor.error_count}"
-puts "Total validation warnings found: #{acceptor.warning_count}"
-
-# Output the errors and warnings using a provided simple starter formatter
-formatter = MyValidation::Formatter.new
-
-puts "\nErrors and warnings found:"
-acceptor.errors_and_warnings.each do |diagnostic|
-  puts formatter.format(diagnostic)
+  exit 2
 end
+
+def invalid_file(code_file)
+  puts "Could not read #{code_file}, skipping."
+  @unreadable_files += 1
+end
+
+# Ensure at least one CLI arguments was passed
+def validate_arguments()
+  usage unless ARGV.count > 0
+end
+
+# Get and validate the filename
+validate_arguments
+
+while (code_file = ARGV.shift)
+  unless (code_file and File.readable?(code_file) )
+    invalid_file(code_file)
+    next
+  end
+
+  puts "Parsing file #{code_file}"
+  puts ""
+
+  # Get a parser
+  parser = Puppet::Pops::Parser::EvaluatingParser.singleton
+
+  # parse without validation
+  result = parser.parser.parse_file(code_file)
+  result = result.model
+
+  # validate using the default validator and get hold of the acceptor containing the result
+  acceptor = parser.validate(result)
+
+  # -- At this point, we have done everything `puppet parser validate` does except report the errors
+  # and raise an exception if there were errors.
+
+  # The acceptor may now contain errors and warnings as found by the standard puppet validation.
+  # We could look at the amount of errors/warnings produced and decide it is too much already
+  # or we could simply continue. Here, some feedback is printed:
+  #
+  puts "Standard validation errors found: #{acceptor.error_count}"
+  puts "Standard validation warnings found: #{acceptor.warning_count}"
+
+  # Validate using the 'MyValidation' defined above
+  #
+  validator = MyValidation::MyFactory.new().validator(acceptor)
+
+  # Perform the validation - this adds the produced errors and warnings into the same acceptor
+  # as was used for the standard validation
+  #
+  validator.validate(result)
+
+  # We can print total statistics
+  # (If we wanted to generated the extra validation separately we would have had to
+  # use a separate acceptor, and then add everything in that acceptor to the main one.)
+  #
+  puts "Total validation errors found: #{acceptor.error_count}"
+  puts "Total validation warnings found: #{acceptor.warning_count}"
+
+  # Output the errors and warnings using a provided simple starter formatter
+  formatter = MyValidation::Formatter.new
+
+  puts "\nErrors and warnings found:"
+  acceptor.errors_and_warnings.each do |diagnostic|
+    puts formatter.format(diagnostic)
+  end
+  puts ""
+end
+
+exit_code = 0
+if @unreadable_files > 0
+  exit_code = 1
+end
+
+exit exit_code
