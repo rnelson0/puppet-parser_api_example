@@ -3,7 +3,7 @@
 require 'pp'
 require 'puppet'
 
-minimum_puppet_version = '4.8.0'
+minimum_puppet_version = '4.0.0'
 if Gem::Version.new(Puppet::PUPPETVERSION) < Gem::Version.new(minimum_puppet_version)
   puts "ERROR: Puppet Parser API requires Puppet v#{minimum_puppet_version} or better!"
   exit 1

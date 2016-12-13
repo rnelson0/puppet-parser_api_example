@@ -11,7 +11,19 @@ Clone this project and run `bundle install`. It only requires the puppet gem and
 
 ### Usage
 
+To perform parsing and an example of a custom validation, run `example.rb` and pass it at least one readable filename containing puppet DSL.
+
     bundle exec example.rb <filename> [<filename> .. <filename>]
 
-Run `example.rb` and pass it at least one readable filename containing puppet DSL.
-The repository includes `testing.pp` which contains a mix of valid and invalid DSL.
+To perform simple validation, `validate.rb` accepts at least one readable filename and displays any errors it finds
+
+    bundle exec validate.rb <filename> [<filename> .. <filename>]
+
+Example:
+
+    $ be validate.rb puppethack.pp testing.pp
+    Validating file puppethack.pp ... OK!
+    Validating file testing.pp ... 1 errors 0 warnings
+      testing.pp:7:1: Illegal attempt to assign to 'a Name'. Not an assignable reference
+
+The repository also includes `testing.pp`, a mix of valid and invalid DSL, and `puppethack.pp`, valid DSL that does not match the style guide.
