@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 
+require 'pp'
 require 'puppet'
 
 # Example of a module setting everything up to perform custom
@@ -155,15 +156,8 @@ def validate_arguments()
   usage unless ARGV.count > 0
 end
 
-# Get and validate the filename
-validate_arguments
-
-while (code_file = ARGV.shift)
-  unless (code_file and File.readable?(code_file) )
-    invalid_file(code_file)
-    next
-  end
-
+# Parse some content
+def parse_and_log(code_file)
   puts "Parsing file #{code_file}"
   puts ""
 
@@ -211,6 +205,51 @@ while (code_file = ARGV.shift)
     puts formatter.format(diagnostic)
   end
   puts ""
+end
+
+def lex_and_log(code_file)
+  puts "Lexing file #{code_file}"
+  puts ""
+
+  # Create an instance of lexer. It can be used for lexing one input at a time
+  lexer = Puppet::Pops::Parser::Lexer2.new
+
+  # Give it the source to lex
+  lexer.lex_file(code_file)
+
+  # Get all tokens as an array, and drop the [false, false] 'end of input' token
+  tokens = lexer.fullscan[0..-2]
+
+  # Looking at the resulting token symbols
+  token_num = 0
+  tokens.each do |token|
+    pp token
+  end
+
+  puts ""
+end
+
+def display(code_file)
+  puts "Displaying raw file #{code_file}"
+  puts ""
+
+  puts File.read(code_file)
+
+  puts ""
+end
+
+# Get and validate the filename
+validate_arguments
+
+while (code_file = ARGV.shift)
+  unless (code_file and File.readable?(code_file) )
+    invalid_file(code_file)
+    next
+  end
+
+  parse_and_log(code_file)
+  lex_and_log(code_file)
+  display(code_file)
 end
 
 exit_code = 0
