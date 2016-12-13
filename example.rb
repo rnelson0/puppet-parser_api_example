@@ -3,6 +3,12 @@
 require 'pp'
 require 'puppet'
 
+minimum_puppet_version = '4.8.0'
+if Gem::Version.new(Puppet::PUPPETVERSION) < Gem::Version.new(minimum_puppet_version)
+  puts "ERROR: Puppet Parser API requires Puppet v#{minimum_puppet_version} or better!"
+  exit 1
+end
+
 # Example of a module setting everything up to perform custom
 # validation of an AST model produced by parsing puppet source.
 #
@@ -158,7 +164,9 @@ end
 
 # Parse some content
 def parse_and_log(code_file)
+  puts "=============================================="
   puts "Parsing file #{code_file}"
+  puts "=============================================="
   puts ""
 
   # Get a parser
@@ -208,7 +216,9 @@ def parse_and_log(code_file)
 end
 
 def lex_and_log(code_file)
+  puts "=============================================="
   puts "Lexing file #{code_file}"
+  puts "=============================================="
   puts ""
 
   # Create an instance of lexer. It can be used for lexing one input at a time
@@ -220,17 +230,15 @@ def lex_and_log(code_file)
   # Get all tokens as an array, and drop the [false, false] 'end of input' token
   tokens = lexer.fullscan[0..-2]
 
-  # Looking at the resulting token symbols
-  token_num = 0
-  tokens.each do |token|
-    pp token
-  end
+  pp tokens
 
   puts ""
 end
 
 def display(code_file)
+  puts "=============================================="
   puts "Displaying raw file #{code_file}"
+  puts "=============================================="
   puts ""
 
   puts File.read(code_file)
